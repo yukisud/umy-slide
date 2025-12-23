@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HTML Slide Builder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="app-root">
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-title">HTML Slide Builder</div>
+      <div class="brand-subtitle">HTMLを貼り付けてプレビュー・編集・書き出し</div>
+    </div>
+    <div class="header-actions">
+      <button id="copyPromptBtn" class="btn btn-ghost">プロンプトをコピー</button>
+      <button id="openGeminiBtn" class="btn btn-primary">Geminiを開く</button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <section class="panel panel-left">
+      <div class="panel-section">
+        <div class="panel-title">入力HTML</div>
+        <textarea id="htmlInput" class="input-textarea" placeholder="生成されたHTMLを貼り付け"></textarea>
+        <div class="panel-row">
+          <button id="renderBtn" class="btn btn-primary">プレビュー生成</button>
+          <button id="clearBtn" class="btn btn-ghost">クリア</button>
+          <button id="loadSampleBtn" class="btn btn-ghost">サンプル読み込み</button>
+        </div>
+        <div class="panel-note">class="slide" の要素を抽出して並べます。scriptタグは自動で除外されます。</div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">編集・見た目</div>
+        <div class="control-grid">
+          <label class="control">
+            <span>編集モード</span>
+            <input type="checkbox" id="editToggle" />
+          </label>
+          <label class="control">
+            <span>密度</span>
+            <select id="densitySelect">
+              <option value="spacious">ゆったり</option>
+              <option value="normal" selected>標準</option>
+              <option value="compact">コンパクト</option>
+            </select>
+          </label>
+          <label class="control">
+            <span>文字スケール</span>
+            <input type="range" id="fontScale" min="0.9" max="1.2" step="0.02" value="1" />
+          </label>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">色の置換</div>
+        <div class="control-grid">
+          <label class="control">
+            <span>検索カラー</span>
+            <input type="text" id="findColor" value="#036ad1" />
+          </label>
+          <label class="control">
+            <span>置換カラー</span>
+            <input type="text" id="replaceColor" value="#111111" />
+          </label>
+        </div>
+        <div class="panel-row">
+          <button id="replaceColorBtn" class="btn btn-ghost">色を置換して再描画</button>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">Gemini設定</div>
+        <label class="control">
+          <span>Gemini URL</span>
+          <input type="text" id="geminiUrl" value="https://gemini.google.com/" />
+        </label>
+        <div class="panel-row">
+          <button id="saveGeminiBtn" class="btn btn-ghost">URL保存</button>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">書き出し</div>
+        <div class="panel-row">
+          <button id="exportImagesBtn" class="btn btn-primary">画像を一括DL</button>
+          <button id="exportPdfBtn" class="btn btn-ghost">PDF一括</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel panel-right">
+      <div class="panel-title">プレビュー</div>
+      <div id="preview" class="preview" data-density="normal" style="--font-scale:1;"></div>
+    </section>
+  </main>
+
+  <template id="sampleTemplate">
+    <div class="slide relative bg-white text-[#002f5d] w-[1280px] min-h-[720px] border-8 border-[#036ad1] rounded-none flex flex-col justify-center">
+      <img src="https://umy-game.com/wp-content/uploads/2025/06/UMY-GAME_LOGO_B-02.png" alt="UMY GAME Logo" class="absolute top-10 right-12 w-64 z-20">
+      <div class="content-wrapper p-10 space-y-6">
+        <h1 class="text-[40px] font-bold text-[#002f5d]">MEO対策とは</h1>
+        <div class="section space-y-4">
+          <h2 class="text-[28px] font-semibold border-l-4 border-[#036ad1] pl-4">基礎概念</h2>
+          <ul class="list-disc ml-6 space-y-2 text-lg">
+            <li><i class="fas fa-check-circle text-[#036ad1] text-xl mr-2"></i>Map Engine Optimizationの略称</li>
+            <li><i class="fas fa-chart-line text-[#036ad1] text-xl mr-2"></i>ローカルSEOの施策</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
