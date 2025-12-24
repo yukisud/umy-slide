@@ -162,31 +162,43 @@ async function renderSlideCanvas(slide) {
   const originalScale = preview.style.getPropertyValue('--preview-scale') || previewScale.value;
   preview.style.setProperty('--preview-scale', '1');
 
-  // 書き出し用CSSクラスを追加
-  document.body.classList.add('exporting');
-
   // レイアウトの再計算を待つ
   await new Promise(resolve => requestAnimationFrame(() =>
     requestAnimationFrame(resolve)
   ));
 
-  // html2canvasで撮影
+  // 上部オフセット調整値（ピクセル）
+  const VERTICAL_OFFSET = 70;
+
+  // html2canvasで上部に余白を持たせて撮影
   const canvas = await html2canvas(slide, {
     width: 1280,
-    height: 720,
+    height: 720 + VERTICAL_OFFSET,
     scale: 2,
     backgroundColor: '#ffffff',
     useCORS: true,
     logging: false
   });
 
-  // 書き出し用CSSクラスを削除
-  document.body.classList.remove('exporting');
-
   // プレビューのスケールを元に戻す
   preview.style.setProperty('--preview-scale', originalScale);
 
-  return canvas;
+  // キャンバスをクロップして上部オフセットを削除
+  const croppedCanvas = document.createElement('canvas');
+  croppedCanvas.width = 1280 * 2;
+  croppedCanvas.height = 720 * 2;
+  const ctx = croppedCanvas.getContext('2d');
+
+  // 元のキャンバスから、上部オフセット分だけ下から切り取る
+  ctx.drawImage(
+    canvas,
+    0, VERTICAL_OFFSET * 2, // ソースのスタート位置 (scale: 2 を考慮)
+    1280 * 2, 720 * 2,      // ソースのサイズ
+    0, 0,                    // 描画先の位置
+    1280 * 2, 720 * 2       // 描画先のサイズ
+  );
+
+  return croppedCanvas;
 }
 
 function saveGeminiUrl() {
