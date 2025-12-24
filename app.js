@@ -158,26 +158,14 @@ async function renderSlideCanvas(slide) {
     await document.fonts.ready;
   }
 
-  // プレビュー内の実際のslide-wrapを取得
-  const wrapper = slide.closest('.slide-wrap');
-  if (!wrapper) {
-    return html2canvas(slide, {
-      width: 1280,
-      height: 720,
-      scale: 2,
-      backgroundColor: '#ffffff',
-      useCORS: true
-    });
-  }
+  // プレビュー全体のスケールを一時的に1.0にする（等倍表示）
+  const originalScale = preview.style.getPropertyValue('--preview-scale') || previewScale.value;
+  preview.style.setProperty('--preview-scale', '1');
 
-  // wrapperのtransformを一時的に解除（プレビュースケールの影響を排除）
-  const originalTransform = wrapper.style.transform;
-  wrapper.style.transform = 'none';
-
-  // レイアウトの再計算を待つ
+  // レイアウトの再計算を待つ（2フレーム待機）
   await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-  // slide要素を直接撮影（1280x720固定）
+  // slide要素を直接撮影
   const canvas = await html2canvas(slide, {
     width: 1280,
     height: 720,
@@ -185,29 +173,11 @@ async function renderSlideCanvas(slide) {
     backgroundColor: '#ffffff',
     useCORS: true,
     allowTaint: true,
-    foreignObjectRendering: false,
-    scrollX: 0,
-    scrollY: 0,
-    windowWidth: 1280,
-    windowHeight: 720,
-    logging: false,
-    onclone: (clonedDoc) => {
-      // クローンされたドキュメント内のslide要素を取得
-      const clonedSlides = clonedDoc.querySelectorAll('.slide-editor');
-      clonedSlides.forEach(s => {
-        // 確実に1280x720にする
-        s.style.width = '1280px';
-        s.style.height = '720px';
-        s.style.minWidth = '1280px';
-        s.style.minHeight = '720px';
-        s.style.maxWidth = '1280px';
-        s.style.maxHeight = '720px';
-      });
-    }
+    logging: false
   });
 
-  // wrapperのtransformを元に戻す
-  wrapper.style.transform = originalTransform;
+  // プレビューのスケールを元に戻す
+  preview.style.setProperty('--preview-scale', originalScale);
 
   return canvas;
 }
