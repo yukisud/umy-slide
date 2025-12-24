@@ -153,44 +153,58 @@ async function exportPdf() {
 }
 
 async function renderSlideCanvas(slide) {
-  // フォントのロード完了を確実に待つ
-  if (document.fonts && document.fonts.ready) {
-    await document.fonts.ready;
-  }
-
-  // 1. スライドを複製
-  const clone = slide.cloneNode(true);
-
-  // 2. 複製したスライドのクリーンアップとスタイル調整
-  clone.classList.remove('slide-editor'); // エディタ用クラスを削除
-  clone.contentEditable = 'false';        // 編集不可に
-  clone.style.transform = 'none';         // トランスフォームをリセット
-  clone.style.margin = '0';               // マージンをリセット
-  clone.style.width = '1280px';           // サイズを固定
-  clone.style.height = '720px';
-
-  // 3. 撮影用の隔離コンテナを作成
-  const container = document.createElement('div');
-  Object.assign(container.style, {
-    position: 'fixed',
+  // 1. Iframeを作成
+  const iframe = document.createElement('iframe');
+  Object.assign(iframe.style, {
+    position: 'absolute',
     top: '0',
     left: '0',
     width: '1280px',
     height: '720px',
+    border: '0',
     zIndex: '-9999',
-    overflow: 'hidden',
-    background: '#ffffff' // 背景色を確保
+    opacity: '0', // 見えないようにするがレンダリングはさせる
+    pointerEvents: 'none'
   });
+  document.body.appendChild(iframe);
 
-  container.appendChild(clone);
-  document.body.appendChild(container);
-
-  // 4. レイアウト計算のために少し待機
-  await new Promise(resolve => setTimeout(resolve, 50));
-
-  // 5. 撮影
   try {
-    const canvas = await html2canvas(container, {
+    const doc = iframe.contentDocument;
+
+    // 2. Iframe環境のセットアップ
+    // スタイルシートをコピー
+    const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
+    styles.forEach(style => {
+      doc.head.appendChild(style.cloneNode(true));
+    });
+
+    // Bodyをリセット
+    Object.assign(doc.body.style, {
+      margin: '0',
+      padding: '0',
+      width: '1280px',
+      height: '720px',
+      overflow: 'hidden',
+      backgroundColor: '#ffffff'
+    });
+
+    // 3. スライドを複製して追加
+    const clone = slide.cloneNode(true);
+    clone.classList.remove('slide-editor');
+    clone.contentEditable = 'false';
+    clone.style.transform = 'none';
+    clone.style.margin = '0';
+    clone.style.width = '1280px';
+    clone.style.height = '720px';
+
+    doc.body.appendChild(clone);
+
+    // 4. リソース（フォントや画像）の読み込み待ち
+    // スタイル適用とレイアウト計算のために少し待機
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // 5. 撮影
+    const canvas = await html2canvas(doc.body, {
       width: 1280,
       height: 720,
       windowWidth: 1280,
@@ -206,9 +220,10 @@ async function renderSlideCanvas(slide) {
       logging: false
     });
     return canvas;
+
   } finally {
     // 6. 後始末
-    document.body.removeChild(container);
+    document.body.removeChild(iframe);
   }
 }
 
