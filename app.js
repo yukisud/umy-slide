@@ -153,27 +153,45 @@ async function exportPdf() {
 }
 
 async function renderSlideCanvas(slide) {
+  // フォントのロード完了を確実に待つ
   if (document.fonts && document.fonts.ready) {
-    try {
-      await document.fonts.ready;
-    } catch (e) {}
-  }
-  const wrapper = slide.closest('.slide-wrap');
-  if (!wrapper) {
-    return html2canvas(slide, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+    await document.fonts.ready;
   }
 
-  const scaleValue = parseFloat(previewScale.value) || 0.75;
-  const exportScale = 2 / scaleValue;
-  document.body.classList.add('exporting');
-  const canvas = await html2canvas(wrapper, {
-    scale: exportScale,
+  // 書き出し用の一時コンテナを作成
+  const exportContainer = document.createElement('div');
+  exportContainer.style.position = 'fixed';
+  exportContainer.style.left = '-9999px';
+  exportContainer.style.top = '0';
+  exportContainer.style.width = '1280px';
+  exportContainer.style.height = '720px';
+  exportContainer.style.overflow = 'hidden';
+  exportContainer.style.background = '#ffffff';
+  document.body.appendChild(exportContainer);
+
+  // スライドをクローンしてコンテナに追加（transformなしの等倍）
+  const clonedSlide = slide.cloneNode(true);
+  clonedSlide.style.transform = 'none';
+  clonedSlide.style.width = '1280px';
+  clonedSlide.style.height = '720px';
+  exportContainer.appendChild(clonedSlide);
+
+  // 書き出し（scale=2で高解像度化）
+  const canvas = await html2canvas(exportContainer, {
+    width: 1280,
+    height: 720,
+    scale: 2,
     backgroundColor: '#ffffff',
     useCORS: true,
     scrollX: 0,
-    scrollY: 0
+    scrollY: 0,
+    windowWidth: 1280,
+    windowHeight: 720
   });
-  document.body.classList.remove('exporting');
+
+  // 一時コンテナを削除
+  document.body.removeChild(exportContainer);
+
   return canvas;
 }
 
@@ -229,23 +247,39 @@ function buildErrorPrompt(message, html) {
 function applySelectionStyle(style) {
   const range = restoreSelectionRange();
   if (!range) return;
+
+  // 選択範囲が空の場合は親要素に適用
   if (range.collapsed) {
     const element = range.startContainer.parentElement;
     if (element && element.closest('.slide-editor')) {
       Object.assign(element.style, style);
     }
+    saveSelectionRange();
     return;
   }
+
+  // 選択範囲がある場合は、spanで囲むか親要素に適用
   try {
+    // シンプルな選択範囲の場合
     const span = document.createElement('span');
     Object.assign(span.style, style);
     range.surroundContents(span);
+
+    // 選択範囲を維持
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    const newRange = document.createRange();
+    newRange.selectNodeContents(span);
+    selection.addRange(newRange);
     saveSelectionRange();
   } catch (e) {
-    const container = range.commonAncestorContainer.parentElement;
-    if (container && container.closest('.slide-editor')) {
-      Object.assign(container.style, style);
+    // 複雑な選択範囲の場合は親要素に適用
+    const container = range.commonAncestorContainer;
+    const element = container.nodeType === Node.TEXT_NODE ? container.parentElement : container;
+    if (element && element.closest('.slide-editor')) {
+      Object.assign(element.style, style);
     }
+    saveSelectionRange();
   }
 }
 

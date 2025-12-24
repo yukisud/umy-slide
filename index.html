@@ -94,25 +94,25 @@
 
   <div class="modal" id="geminiModal" aria-hidden="true">
     <div class="modal-card">
-      <div class="modal-title">Gemini初期設定</div>
-      <div class="modal-text">次の手順で初期設定を行います。</div>
+      <div class="modal-title">Gemini初期設定ガイド</div>
+      <div class="modal-text">以下の手順に従って、Geminiをスライド生成用に設定します。</div>
+      <ol class="modal-steps">
+        <li><strong>① プロンプトをコピー</strong><br>下のボタンを押して、スライド生成用のプロンプトをコピーします。</li>
+        <li><strong>② Geminiを開く</strong><br>ボタンを押してGeminiを新しいタブで開きます。</li>
+        <li><strong>③ Gemを作成</strong><br>Geminiで新しいGemを作成し、名前を入力します（例：「スライド生成AI」）。</li>
+        <li><strong>④ カスタム指示を設定</strong><br>「カスタム指示」欄に、①でコピーしたプロンプトを貼り付けて保存します。</li>
+        <li><strong>⑤ URLを取得</strong><br>作成したGemの「共有」ボタンをクリック → 共有設定 → 「リンクをコピー」を選択します。</li>
+      </ol>
       <div class="panel-row">
         <button id="modalCopyPromptBtn" class="btn btn-primary">① プロンプトをコピー</button>
+        <button id="modalOpenGeminiBtn" class="btn btn-ghost">② Geminiを開く</button>
       </div>
-      <ol class="modal-steps">
-        <li>以下のプロンプトをコピーする</li>
-        <li>Geminiを開く（ボタンを押す）</li>
-        <li>Gemの名前を入力し、「カスタム指示」にコピーしたプロンプトを貼り付けて保存</li>
-        <li>「共有」ボタンをクリックし、共有ユーザーを設定 → 「リンクをコピー」</li>
-        <li>コピーしたURLを下の入力欄に貼り付けて「保存して開始」</li>
-      </ol>
       <label class="control">
-        <span>Gemini URL</span>
-        <input type="text" id="modalGeminiUrl" placeholder="https://gemini.google.com/" />
+        <span>⑤ コピーしたGemini URLを貼り付け</span>
+        <input type="text" id="modalGeminiUrl" placeholder="https://gemini.google.com/app/..." />
       </label>
       <div class="panel-row">
-        <button id="modalOpenGeminiBtn" class="btn btn-ghost">② Geminiを開く</button>
-        <button id="modalSaveGeminiBtn" class="btn btn-ghost">保存して開始</button>
+        <button id="modalSaveGeminiBtn" class="btn btn-primary">保存して開始</button>
         <button id="modalCloseBtn" class="btn btn-ghost">キャンセル</button>
       </div>
     </div>
