@@ -153,77 +153,67 @@ async function exportPdf() {
 }
 
 async function renderSlideCanvas(slide) {
-  // 1. Iframeを作成
-  const iframe = document.createElement('iframe');
-  Object.assign(iframe.style, {
-    position: 'absolute',
+  // フォントのロード完了を確実に待つ
+  if (document.fonts && document.fonts.ready) {
+    await document.fonts.ready;
+  }
+
+  // 1. スライドを複製してクリーンアップ
+  const clone = slide.cloneNode(true);
+  clone.classList.remove('slide-editor');
+  clone.contentEditable = 'false';
+  clone.style.transform = 'none';
+  clone.style.margin = '0';
+
+  // 2. 撮影用の隔離コンテナを作成
+  const container = document.createElement('div');
+  Object.assign(container.style, {
+    position: 'fixed',
     top: '0',
     left: '0',
     width: '1280px',
     height: '720px',
-    border: '0',
     zIndex: '-9999',
-    opacity: '0', // 見えないようにするがレンダリングはさせる
-    pointerEvents: 'none'
+    background: '#ffffff',
+    overflow: 'hidden' // はみ出し防止
   });
-  document.body.appendChild(iframe);
+
+  container.appendChild(clone);
+  document.body.appendChild(container);
 
   try {
-    const doc = iframe.contentDocument;
-
-    // 2. Iframe環境のセットアップ
-    // スタイルシートをコピー
-    const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
-    styles.forEach(style => {
-      doc.head.appendChild(style.cloneNode(true));
-    });
-
-    // Bodyをリセット
-    Object.assign(doc.body.style, {
-      margin: '0',
-      padding: '0',
-      width: '1280px',
-      height: '720px',
-      overflow: 'hidden',
-      backgroundColor: '#ffffff'
-    });
-
-    // 3. スライドを複製して追加
-    const clone = slide.cloneNode(true);
-    clone.classList.remove('slide-editor');
-    clone.contentEditable = 'false';
-    clone.style.transform = 'none';
-    clone.style.margin = '0';
-    clone.style.width = '1280px';
-    clone.style.height = '720px';
-
-    doc.body.appendChild(clone);
-
-    // 4. リソース（フォントや画像）の読み込み待ち
-    // スタイル適用とレイアウト計算のために少し待機
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // 5. 撮影
-    const canvas = await html2canvas(doc.body, {
+    // 3. dom-to-imageでレンダリング
+    // SVGのforeignObjectを使用してブラウザのレンダリングエンジンで描画します
+    const dataUrl = await domtoimage.toPng(container, {
       width: 1280,
       height: 720,
-      windowWidth: 1280,
-      windowHeight: 720,
-      scrollX: 0,
-      scrollY: 0,
-      x: 0,
-      y: 0,
-      scale: 2,
-      backgroundColor: '#ffffff',
-      useCORS: true,
-      allowTaint: true,
-      logging: false
+      style: {
+        transform: 'scale(1)',
+        transformOrigin: 'top left'
+      }
     });
-    return canvas;
 
+    // 4. Canvasに変換 (既存の処理との互換性のため)
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1280;
+        canvas.height = 720;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas);
+      };
+      img.onerror = reject;
+      img.src = dataUrl;
+    });
+
+  } catch (error) {
+    console.error('Export failed:', error);
+    throw error;
   } finally {
-    // 6. 後始末
-    document.body.removeChild(iframe);
+    // 5. 後始末
+    document.body.removeChild(container);
   }
 }
 
