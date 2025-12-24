@@ -158,34 +158,58 @@ async function renderSlideCanvas(slide) {
     await document.fonts.ready;
   }
 
-  // プレビュー全体のスケールを一時的に1.0にする（等倍表示）
-  const originalScale = preview.style.getPropertyValue('--preview-scale') || previewScale.value;
-  preview.style.setProperty('--preview-scale', '1');
+  // 1. スライドを複製
+  const clone = slide.cloneNode(true);
 
-  // レイアウトの再計算を待つ（2フレーム待機）
-  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  // 2. 複製したスライドのクリーンアップとスタイル調整
+  clone.classList.remove('slide-editor'); // エディタ用クラスを削除
+  clone.contentEditable = 'false';        // 編集不可に
+  clone.style.transform = 'none';         // トランスフォームをリセット
+  clone.style.margin = '0';               // マージンをリセット
+  clone.style.width = '1280px';           // サイズを固定
+  clone.style.height = '720px';
 
-  // slide要素を直接撮影
-  const canvas = await html2canvas(slide, {
-    width: 1280,
-    height: 720,
-    windowWidth: 1280,
-    windowHeight: 720,
-    scrollX: 0,
-    scrollY: 0,
-    x: 0,
-    y: 0,
-    scale: 2,
-    backgroundColor: '#ffffff',
-    useCORS: true,
-    allowTaint: true,
-    logging: false
+  // 3. 撮影用の隔離コンテナを作成
+  const container = document.createElement('div');
+  Object.assign(container.style, {
+    position: 'fixed',
+    top: '0',
+    left: '0',
+    width: '1280px',
+    height: '720px',
+    zIndex: '-9999',
+    overflow: 'hidden',
+    background: '#ffffff' // 背景色を確保
   });
 
-  // プレビューのスケールを元に戻す
-  preview.style.setProperty('--preview-scale', originalScale);
+  container.appendChild(clone);
+  document.body.appendChild(container);
 
-  return canvas;
+  // 4. レイアウト計算のために少し待機
+  await new Promise(resolve => setTimeout(resolve, 50));
+
+  // 5. 撮影
+  try {
+    const canvas = await html2canvas(container, {
+      width: 1280,
+      height: 720,
+      windowWidth: 1280,
+      windowHeight: 720,
+      scrollX: 0,
+      scrollY: 0,
+      x: 0,
+      y: 0,
+      scale: 2,
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      allowTaint: true,
+      logging: false
+    });
+    return canvas;
+  } finally {
+    // 6. 後始末
+    document.body.removeChild(container);
+  }
 }
 
 function saveGeminiUrl() {
