@@ -68,6 +68,7 @@ body.app-root {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  position: relative;
 }
 
 .panel-title {
@@ -239,6 +240,55 @@ body.app-root {
   cursor: pointer;
 }
 
+.selection-toolbar {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: none;
+  gap: 8px;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  z-index: 20;
+}
+
+.selection-toolbar.show {
+  display: flex;
+}
+
+.toolbar-control {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.toolbar-control input[type="number"],
+.toolbar-control input[type="color"] {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 6px;
+  font-size: 11px;
+}
+
+.toolbar-swatches {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+}
+
+.toolbar-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
 .toast {
   position: fixed;
   bottom: 24px;
@@ -291,6 +341,40 @@ body.app-root {
 .modal-text {
   font-size: 12px;
   color: var(--muted);
+}
+
+.modal-steps {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  color: var(--muted);
+  display: grid;
+  gap: 4px;
+}
+
+.error-body {
+  display: grid;
+  gap: 10px;
+}
+
+.error-message {
+  font-size: 12px;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.error-textarea {
+  width: 100%;
+  min-height: 140px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 11px;
+  background: #f9fafb;
+  color: #111111;
 }
 
 @media (max-width: 1100px) {
