@@ -162,43 +162,30 @@ async function renderSlideCanvas(slide) {
   const originalScale = preview.style.getPropertyValue('--preview-scale') || previewScale.value;
   preview.style.setProperty('--preview-scale', '1');
 
-  // レイアウトの再計算を待つ
-  await new Promise(resolve => requestAnimationFrame(() =>
-    requestAnimationFrame(resolve)
-  ));
+  // レイアウトの再計算を待つ（2フレーム待機）
+  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-  // 上部オフセット調整値（ピクセル）
-  const VERTICAL_OFFSET = 70;
-
-  // html2canvasで上部に余白を持たせて撮影
+  // slide要素を直接撮影
   const canvas = await html2canvas(slide, {
     width: 1280,
-    height: 720 + VERTICAL_OFFSET,
+    height: 720,
+    windowWidth: 1280,
+    windowHeight: 720,
+    scrollX: 0,
+    scrollY: 0,
+    x: 0,
+    y: 0,
     scale: 2,
     backgroundColor: '#ffffff',
     useCORS: true,
+    allowTaint: true,
     logging: false
   });
 
   // プレビューのスケールを元に戻す
   preview.style.setProperty('--preview-scale', originalScale);
 
-  // キャンバスをクロップして上部オフセットを削除
-  const croppedCanvas = document.createElement('canvas');
-  croppedCanvas.width = 1280 * 2;
-  croppedCanvas.height = 720 * 2;
-  const ctx = croppedCanvas.getContext('2d');
-
-  // 元のキャンバスから、上部オフセット分だけ下から切り取る
-  ctx.drawImage(
-    canvas,
-    0, VERTICAL_OFFSET * 2, // ソースのスタート位置 (scale: 2 を考慮)
-    1280 * 2, 720 * 2,      // ソースのサイズ
-    0, 0,                    // 描画先の位置
-    1280 * 2, 720 * 2       // 描画先のサイズ
-  );
-
-  return croppedCanvas;
+  return canvas;
 }
 
 function saveGeminiUrl() {
@@ -220,7 +207,7 @@ function copyPrompt() {
   if (!promptText) return;
   navigator.clipboard.writeText(promptText).then(() => {
     showToast('コピーしました');
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
 function showGeminiModal() {
@@ -408,7 +395,7 @@ modalCloseBtn.addEventListener('click', closeGeminiModal);
 copyErrorPromptBtn.addEventListener('click', () => {
   navigator.clipboard.writeText(errorPrompt.value).then(() => {
     showToast('コピーしました');
-  }).catch(() => {});
+  }).catch(() => { });
 });
 closeErrorModalBtn.addEventListener('click', closeErrorModal);
 document.addEventListener('selectionchange', refreshSelection);
