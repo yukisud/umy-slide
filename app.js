@@ -162,23 +162,12 @@ async function renderSlideCanvas(slide) {
   const originalScale = preview.style.getPropertyValue('--preview-scale') || previewScale.value;
   preview.style.setProperty('--preview-scale', '1');
 
-  // slide-editor自体を直接調整（oncloneではなく実DOMを調整）
-  const originalPosition = slide.style.position;
-  const originalTop = slide.style.top;
-  const originalTransform = slide.style.transform;
-
-  slide.style.position = 'relative';
-  slide.style.top = '-25px'; // html2canvasの描画バグを補正
-  slide.style.transform = 'translateY(0)'; // transformをリセット
-
-  // レイアウトの再計算を待つ（3フレーム待機）
+  // レイアウトの再計算を待つ
   await new Promise(resolve => requestAnimationFrame(() =>
-    requestAnimationFrame(() =>
-      requestAnimationFrame(resolve)
-    )
+    requestAnimationFrame(resolve)
   ));
 
-  // html2canvasで撮影（シンプルな設定、oncloneなし）
+  // html2canvasで撮影（オプション最適化）
   const canvas = await html2canvas(slide, {
     width: 1280,
     height: 720,
@@ -186,13 +175,16 @@ async function renderSlideCanvas(slide) {
     backgroundColor: '#ffffff',
     useCORS: true,
     allowTaint: true,
-    logging: false
+    foreignObjectRendering: true, // SVG/foreignObjectを使用
+    letterRendering: true, // 文字レンダリング改善
+    logging: false,
+    windowWidth: 1280,
+    windowHeight: 720,
+    x: 0,
+    y: 0
   });
 
-  // 元に戻す
-  slide.style.position = originalPosition;
-  slide.style.top = originalTop;
-  slide.style.transform = originalTransform;
+  // プレビューのスケールを元に戻す
   preview.style.setProperty('--preview-scale', originalScale);
 
   return canvas;
