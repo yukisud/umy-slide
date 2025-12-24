@@ -158,39 +158,26 @@ async function renderSlideCanvas(slide) {
     await document.fonts.ready;
   }
 
-  // 書き出し用の一時コンテナを作成
-  const exportContainer = document.createElement('div');
-  exportContainer.style.position = 'fixed';
-  exportContainer.style.left = '-9999px';
-  exportContainer.style.top = '0';
-  exportContainer.style.width = '1280px';
-  exportContainer.style.height = '720px';
-  exportContainer.style.overflow = 'hidden';
-  exportContainer.style.background = '#ffffff';
-  document.body.appendChild(exportContainer);
+  // プレビュー全体のスケールを一時的に1.0にする（等倍表示）
+  const originalScale = preview.style.getPropertyValue('--preview-scale') || previewScale.value;
+  preview.style.setProperty('--preview-scale', '1');
 
-  // スライドをクローンしてコンテナに追加（transformなしの等倍）
-  const clonedSlide = slide.cloneNode(true);
-  clonedSlide.style.transform = 'none';
-  clonedSlide.style.width = '1280px';
-  clonedSlide.style.height = '720px';
-  exportContainer.appendChild(clonedSlide);
+  // レイアウトの再計算を待つ（2フレーム待機）
+  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-  // 書き出し（scale=2で高解像度化）
-  const canvas = await html2canvas(exportContainer, {
+  // slide要素を直接撮影
+  const canvas = await html2canvas(slide, {
     width: 1280,
     height: 720,
     scale: 2,
     backgroundColor: '#ffffff',
     useCORS: true,
-    scrollX: 0,
-    scrollY: 0,
-    windowWidth: 1280,
-    windowHeight: 720
+    allowTaint: true,
+    logging: false
   });
 
-  // 一時コンテナを削除
-  document.body.removeChild(exportContainer);
+  // プレビューのスケールを元に戻す
+  preview.style.setProperty('--preview-scale', originalScale);
 
   return canvas;
 }

@@ -176,9 +176,7 @@ body.app-root {
   outline-offset: 4px;
 }
 
-.preview .slide-editor {
-  font-size: calc(16px * var(--font-scale));
-}
+/* 書き出し時の整合性のため、font-scaleは使用しない */
 
 .header-actions {
   display: flex;
