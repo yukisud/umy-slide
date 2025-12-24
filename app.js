@@ -163,36 +163,30 @@ async function renderSlideCanvas(slide) {
     return html2canvas(slide, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
   }
 
-  const originalScale = preview.style.getPropertyValue('--preview-scale');
-  const originalTransform = wrapper.style.transform;
-  const originalWidth = wrapper.style.width;
   const originalMargin = wrapper.style.margin;
-  const originalHeight = slide.style.height;
-
   document.body.classList.add('exporting');
-  preview.style.setProperty('--preview-scale', 1);
-  wrapper.style.transform = 'scale(1)';
-  wrapper.style.width = '1280px';
   wrapper.style.margin = '0';
-  slide.style.height = '720px';
 
-  const canvas = await html2canvas(slide, {
-    scale: 2,
+  const targetScale = 2;
+  const targetWidth = 1280 * targetScale;
+  const targetHeight = 720 * targetScale;
+  const rawCanvas = await html2canvas(wrapper, {
+    scale: targetScale,
     backgroundColor: '#ffffff',
     useCORS: true,
     scrollX: 0,
-    scrollY: 0,
-    width: 1280,
-    height: 720
+    scrollY: 0
   });
 
-  slide.style.height = originalHeight;
-  wrapper.style.transform = originalTransform;
-  wrapper.style.width = originalWidth;
+  const output = document.createElement('canvas');
+  output.width = targetWidth;
+  output.height = targetHeight;
+  const ctx = output.getContext('2d');
+  ctx.drawImage(rawCanvas, 0, 0, rawCanvas.width, rawCanvas.height, 0, 0, targetWidth, targetHeight);
+
   wrapper.style.margin = originalMargin;
-  preview.style.setProperty('--preview-scale', originalScale);
   document.body.classList.remove('exporting');
-  return canvas;
+  return output;
 }
 
 function saveGeminiUrl() {
