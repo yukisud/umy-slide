@@ -152,6 +152,8 @@ async function exportPdf() {
   pdf.save('slides.pdf');
 }
 
+const EXPORT_CONTENT_OFFSET_PX = 18;
+
 async function renderSlideCanvas(slide) {
   if (document.fonts && document.fonts.ready) {
     try {
@@ -181,6 +183,7 @@ async function renderSlideCanvas(slide) {
   wrapper.style.margin = '0';
   slide.style.width = '1280px';
   slide.style.height = '720px';
+  const cleanupOffset = applyExportOffset(slide, EXPORT_CONTENT_OFFSET_PX);
 
   const rawCanvas = await html2canvas(slide, {
     scale: 2,
@@ -192,14 +195,7 @@ async function renderSlideCanvas(slide) {
     height: 720
   });
 
-  const offsetY = -20;
-  const output = document.createElement('canvas');
-  output.width = rawCanvas.width;
-  output.height = rawCanvas.height;
-  const ctx = output.getContext('2d');
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, output.width, output.height);
-  ctx.drawImage(rawCanvas, 0, offsetY * 2);
+  cleanupOffset();
 
   slide.style.width = originalSlideWidth;
   slide.style.height = originalSlideHeight;
@@ -210,7 +206,24 @@ async function renderSlideCanvas(slide) {
   wrapper.style.margin = originalMargin;
   preview.style.setProperty('--preview-scale', originalScale);
   document.body.classList.remove('exporting');
-  return output;
+  return rawCanvas;
+}
+
+function applyExportOffset(slide, offsetPx) {
+  if (!offsetPx) return () => {};
+  const children = Array.from(slide.childNodes);
+  const wrap = document.createElement('div');
+  wrap.className = 'export-content-wrap';
+  wrap.style.position = 'relative';
+  wrap.style.width = '100%';
+  wrap.style.height = '100%';
+  wrap.style.transform = `translateY(${-offsetPx}px)`;
+  children.forEach(child => wrap.appendChild(child));
+  slide.appendChild(wrap);
+  return () => {
+    slide.removeChild(wrap);
+    children.forEach(child => slide.appendChild(child));
+  };
 }
 
 function saveGeminiUrl() {
