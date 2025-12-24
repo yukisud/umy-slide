@@ -152,8 +152,6 @@ async function exportPdf() {
   pdf.save('slides.pdf');
 }
 
-const EXPORT_CONTENT_OFFSET_PX = 18;
-
 async function renderSlideCanvas(slide) {
   if (document.fonts && document.fonts.ready) {
     try {
@@ -165,65 +163,18 @@ async function renderSlideCanvas(slide) {
     return html2canvas(slide, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
   }
 
-  const originalScale = preview.style.getPropertyValue('--preview-scale');
-  const originalWrapperTransform = wrapper.style.transform;
-  const originalWrapperOrigin = wrapper.style.transformOrigin;
-  const originalWrapperWidth = wrapper.style.width;
-  const originalWrapperHeight = wrapper.style.height;
-  const originalMargin = wrapper.style.margin;
-  const originalSlideWidth = slide.style.width;
-  const originalSlideHeight = slide.style.height;
-
+  const scaleValue = parseFloat(previewScale.value) || 0.75;
+  const exportScale = 2 / scaleValue;
   document.body.classList.add('exporting');
-  preview.style.setProperty('--preview-scale', 1);
-  wrapper.style.transform = 'none';
-  wrapper.style.transformOrigin = 'top left';
-  wrapper.style.width = '1280px';
-  wrapper.style.height = '720px';
-  wrapper.style.margin = '0';
-  slide.style.width = '1280px';
-  slide.style.height = '720px';
-  const cleanupOffset = applyExportOffset(slide, EXPORT_CONTENT_OFFSET_PX);
-
-  const rawCanvas = await html2canvas(slide, {
-    scale: 2,
+  const canvas = await html2canvas(wrapper, {
+    scale: exportScale,
     backgroundColor: '#ffffff',
     useCORS: true,
     scrollX: 0,
-    scrollY: 0,
-    width: 1280,
-    height: 720
+    scrollY: 0
   });
-
-  cleanupOffset();
-
-  slide.style.width = originalSlideWidth;
-  slide.style.height = originalSlideHeight;
-  wrapper.style.transform = originalWrapperTransform;
-  wrapper.style.transformOrigin = originalWrapperOrigin;
-  wrapper.style.width = originalWrapperWidth;
-  wrapper.style.height = originalWrapperHeight;
-  wrapper.style.margin = originalMargin;
-  preview.style.setProperty('--preview-scale', originalScale);
   document.body.classList.remove('exporting');
-  return rawCanvas;
-}
-
-function applyExportOffset(slide, offsetPx) {
-  if (!offsetPx) return () => {};
-  const children = Array.from(slide.childNodes);
-  const wrap = document.createElement('div');
-  wrap.className = 'export-content-wrap';
-  wrap.style.position = 'relative';
-  wrap.style.width = '100%';
-  wrap.style.height = '100%';
-  wrap.style.transform = `translateY(${-offsetPx}px)`;
-  children.forEach(child => wrap.appendChild(child));
-  slide.appendChild(wrap);
-  return () => {
-    slide.removeChild(wrap);
-    children.forEach(child => slide.appendChild(child));
-  };
+  return canvas;
 }
 
 function saveGeminiUrl() {
