@@ -173,7 +173,33 @@ async function renderSlideCanvas(slide) {
     backgroundColor: '#ffffff',
     useCORS: true,
     allowTaint: true,
-    logging: false
+    logging: false,
+    onclone: (clonedDoc) => {
+      // html2canvasのテキスト・アイコン描画バグを回避
+      // すべてのテキストノードとアイコンを20px上に移動
+      const clonedSlide = clonedDoc.querySelector('.slide-editor');
+      if (!clonedSlide) return;
+
+      // テキスト要素（p, h1-h6, span, div, liなど）
+      const textElements = clonedSlide.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div, li, a, strong, em');
+      textElements.forEach(el => {
+        const currentPosition = window.getComputedStyle(el).position;
+        if (currentPosition === 'static') {
+          el.style.position = 'relative';
+        }
+        el.style.top = '-20px';
+      });
+
+      // アイコン要素（i, svg）
+      const iconElements = clonedSlide.querySelectorAll('i, svg');
+      iconElements.forEach(el => {
+        const currentPosition = window.getComputedStyle(el).position;
+        if (currentPosition === 'static') {
+          el.style.position = 'relative';
+        }
+        el.style.top = '-20px';
+      });
+    }
   });
 
   // プレビューのスケールを元に戻す
