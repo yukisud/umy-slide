@@ -178,6 +178,17 @@ body.app-root {
 
 /* 書き出し時の整合性のため、font-scaleは使用しない */
 
+/* 書き出し時のレイアウト調整 */
+body.exporting .slide-editor {
+  position: relative;
+  top: -20px;
+}
+
+body.exporting .slide-editor * {
+  position: relative;
+  top: -5px;
+}
+
 .header-actions {
   display: flex;
   gap: 8px;

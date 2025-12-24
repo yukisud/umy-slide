@@ -162,6 +162,9 @@ async function renderSlideCanvas(slide) {
   const originalScale = preview.style.getPropertyValue('--preview-scale') || previewScale.value;
   preview.style.setProperty('--preview-scale', '1');
 
+  // 書き出し用CSSクラスを追加
+  document.body.classList.add('exporting');
+
   // レイアウトの再計算を待つ
   await new Promise(resolve => requestAnimationFrame(() =>
     requestAnimationFrame(resolve)
@@ -176,6 +179,9 @@ async function renderSlideCanvas(slide) {
     useCORS: true,
     logging: false
   });
+
+  // 書き出し用CSSクラスを削除
+  document.body.classList.remove('exporting');
 
   // プレビューのスケールを元に戻す
   preview.style.setProperty('--preview-scale', originalScale);
