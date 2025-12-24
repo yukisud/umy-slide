@@ -158,33 +158,40 @@ async function renderSlideCanvas(slide) {
       await document.fonts.ready;
     } catch (e) {}
   }
-  const temp = document.createElement('div');
-  temp.style.position = 'fixed';
-  temp.style.left = '0';
-  temp.style.top = '0';
-  temp.style.width = '1280px';
-  temp.style.height = '720px';
-  temp.style.background = '#ffffff';
-  temp.style.opacity = '0';
-  temp.style.pointerEvents = 'none';
-  const clone = slide.cloneNode(true);
-  clone.style.transform = 'none';
-  clone.style.width = '1280px';
-  clone.style.height = '720px';
-  clone.style.margin = '0';
-  clone.contentEditable = 'false';
-  temp.appendChild(clone);
-  document.body.appendChild(temp);
-  const canvas = await html2canvas(clone, {
-      scale: 2,
-      backgroundColor: '#ffffff',
-      useCORS: true,
-      scrollX: 0,
-      scrollY: 0,
-      windowWidth: 1280,
-      windowHeight: 720
-    });
-  document.body.removeChild(temp);
+  const wrapper = slide.closest('.slide-wrap');
+  if (!wrapper) {
+    return html2canvas(slide, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+  }
+
+  const originalScale = preview.style.getPropertyValue('--preview-scale');
+  const originalTransform = wrapper.style.transform;
+  const originalWidth = wrapper.style.width;
+  const originalMargin = wrapper.style.margin;
+  const originalHeight = slide.style.height;
+
+  document.body.classList.add('exporting');
+  preview.style.setProperty('--preview-scale', 1);
+  wrapper.style.transform = 'scale(1)';
+  wrapper.style.width = '1280px';
+  wrapper.style.margin = '0';
+  slide.style.height = '720px';
+
+  const canvas = await html2canvas(slide, {
+    scale: 2,
+    backgroundColor: '#ffffff',
+    useCORS: true,
+    scrollX: 0,
+    scrollY: 0,
+    width: 1280,
+    height: 720
+  });
+
+  slide.style.height = originalHeight;
+  wrapper.style.transform = originalTransform;
+  wrapper.style.width = originalWidth;
+  wrapper.style.margin = originalMargin;
+  preview.style.setProperty('--preview-scale', originalScale);
+  document.body.classList.remove('exporting');
   return canvas;
 }
 
