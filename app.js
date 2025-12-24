@@ -167,21 +167,14 @@ async function renderSlideCanvas(slide) {
     requestAnimationFrame(resolve)
   ));
 
-  // html2canvasで撮影（オプション最適化）
+  // html2canvasで撮影
   const canvas = await html2canvas(slide, {
     width: 1280,
     height: 720,
     scale: 2,
     backgroundColor: '#ffffff',
     useCORS: true,
-    allowTaint: true,
-    foreignObjectRendering: true, // SVG/foreignObjectを使用
-    letterRendering: true, // 文字レンダリング改善
-    logging: false,
-    windowWidth: 1280,
-    windowHeight: 720,
-    x: 0,
-    y: 0
+    logging: false
   });
 
   // プレビューのスケールを元に戻す
