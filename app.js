@@ -160,21 +160,29 @@ async function renderSlideCanvas(slide) {
   }
   const temp = document.createElement('div');
   temp.style.position = 'fixed';
-  temp.style.left = '-10000px';
+  temp.style.left = '0';
   temp.style.top = '0';
   temp.style.width = '1280px';
+  temp.style.height = '720px';
   temp.style.background = '#ffffff';
+  temp.style.opacity = '0';
+  temp.style.pointerEvents = 'none';
   const clone = slide.cloneNode(true);
   clone.style.transform = 'none';
   clone.style.width = '1280px';
   clone.style.height = '720px';
+  clone.style.margin = '0';
   clone.contentEditable = 'false';
   temp.appendChild(clone);
   document.body.appendChild(temp);
   const canvas = await html2canvas(clone, {
       scale: 2,
       backgroundColor: '#ffffff',
-      useCORS: true
+      useCORS: true,
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: 1280,
+      windowHeight: 720
     });
   document.body.removeChild(temp);
   return canvas;
@@ -315,11 +323,10 @@ function restoreSelectionRange() {
 function positionToolbar(range) {
   if (!range) return;
   const rect = range.getBoundingClientRect();
-  const panelRect = preview.parentElement.getBoundingClientRect();
   const previewRect = preview.getBoundingClientRect();
   if (rect.width === 0 && rect.height === 0) return;
-  const top = Math.max(8, rect.top - panelRect.top - 52);
-  const left = Math.min(previewRect.width - 240, Math.max(8, rect.left - panelRect.left));
+  const top = Math.max(8, rect.top - previewRect.top + preview.scrollTop - 52);
+  const left = Math.min(previewRect.width - 240, Math.max(8, rect.left - previewRect.left + preview.scrollLeft));
   selectionToolbar.style.top = `${top}px`;
   selectionToolbar.style.left = `${left}px`;
 }
