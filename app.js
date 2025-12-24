@@ -169,6 +169,12 @@ async function renderSlideCanvas(slide) {
   const canvas = await html2canvas(slide, {
     width: 1280,
     height: 720,
+    windowWidth: 1280,
+    windowHeight: 720,
+    scrollX: 0,
+    scrollY: 0,
+    x: 0,
+    y: 0,
     scale: 2,
     backgroundColor: '#ffffff',
     useCORS: true,
@@ -201,7 +207,7 @@ function copyPrompt() {
   if (!promptText) return;
   navigator.clipboard.writeText(promptText).then(() => {
     showToast('コピーしました');
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
 function showGeminiModal() {
@@ -389,7 +395,7 @@ modalCloseBtn.addEventListener('click', closeGeminiModal);
 copyErrorPromptBtn.addEventListener('click', () => {
   navigator.clipboard.writeText(errorPrompt.value).then(() => {
     showToast('コピーしました');
-  }).catch(() => {});
+  }).catch(() => { });
 });
 closeErrorModalBtn.addEventListener('click', closeErrorModal);
 document.addEventListener('selectionchange', refreshSelection);
