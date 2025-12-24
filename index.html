@@ -51,23 +51,8 @@
       </div>
 
       <div class="panel-section">
-        <div class="panel-title">選択テキストの調整 <span class="help-tip" data-tip="プレビュー内の文字を選択してから調整します。"></span></div>
-        <div class="control-grid">
-          <label class="control">
-            <span>フォントサイズ</span>
-            <input type="number" id="fontSizeInput" min="10" max="96" step="1" value="16" />
-          </label>
-          <label class="control">
-            <span>文字色</span>
-            <input type="color" id="fontColorInput" value="#111111" />
-          </label>
-        </div>
-        <div class="color-scale" id="colorScale"></div>
-        <div class="panel-row">
-          <button id="applyFontSizeBtn" class="btn btn-ghost">サイズ適用</button>
-          <button id="applyFontColorBtn" class="btn btn-ghost">色適用</button>
-        </div>
-        <div class="panel-note">選択範囲が複数要素に跨る場合は、近い要素に適用されます。</div>
+        <div class="panel-title">選択テキストの調整 <span class="help-tip" data-tip="プレビュー内の文字を選択すると、右上にツールが表示されます。"></span></div>
+        <div class="panel-note">文字を選択 → 右上のツールでサイズ/色を調整。</div>
       </div>
 
       <div class="panel-section">
@@ -93,23 +78,57 @@
     <section class="panel panel-right">
       <div class="panel-title">プレビュー</div>
       <div id="preview" class="preview"></div>
+      <div id="selectionToolbar" class="selection-toolbar">
+        <label class="toolbar-control">
+          <span>Size</span>
+          <input type="number" id="toolbarFontSize" min="10" max="96" step="1" value="16" />
+        </label>
+        <label class="toolbar-control">
+          <span>Color</span>
+          <input type="color" id="toolbarFontColor" value="#111111" />
+        </label>
+        <div class="toolbar-swatches" id="toolbarSwatches"></div>
+      </div>
     </section>
   </main>
 
   <div class="modal" id="geminiModal" aria-hidden="true">
     <div class="modal-card">
       <div class="modal-title">Gemini初期設定</div>
-      <div class="modal-text">プロンプトをコピーして、Gemini URLを登録してください。</div>
+      <div class="modal-text">次の手順で初期設定を行います。</div>
       <div class="panel-row">
-        <button id="modalCopyPromptBtn" class="btn btn-primary">プロンプトをコピー</button>
+        <button id="modalCopyPromptBtn" class="btn btn-primary">① プロンプトをコピー</button>
+        <button id="modalOpenGeminiBtn" class="btn btn-ghost">② Geminiを開く</button>
       </div>
+      <ol class="modal-steps">
+        <li>以下のプロンプトをコピーする</li>
+        <li>Geminiを開く（ボタンを押す）</li>
+        <li>Gemの名前を入力し、「カスタム指示」にコピーしたプロンプトを貼り付けて保存</li>
+        <li>「共有」ボタンをクリックし、共有ユーザーを設定 → 「リンクをコピー」</li>
+        <li>コピーしたURLを下の入力欄に貼り付けて「保存して開始」</li>
+      </ol>
       <label class="control">
         <span>Gemini URL</span>
         <input type="text" id="modalGeminiUrl" placeholder="https://gemini.google.com/" />
       </label>
       <div class="panel-row">
-        <button id="modalSaveGeminiBtn" class="btn btn-ghost">保存して開く</button>
+        <button id="modalSaveGeminiBtn" class="btn btn-ghost">保存して開始</button>
         <button id="modalCloseBtn" class="btn btn-ghost">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="errorModal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-title">HTMLエラー</div>
+      <div class="modal-text">Geminiに修正を依頼できます。</div>
+      <div class="error-body">
+        <div id="errorMessage" class="error-message"></div>
+        <textarea id="errorPrompt" class="error-textarea" readonly></textarea>
+      </div>
+      <div class="panel-row">
+        <button id="copyErrorPromptBtn" class="btn btn-primary">修正プロンプトをコピー</button>
+        <button id="closeErrorModalBtn" class="btn btn-ghost">閉じる</button>
       </div>
     </div>
   </div>
