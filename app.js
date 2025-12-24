@@ -4,11 +4,10 @@ const renderBtn = document.getElementById('renderBtn');
 const clearBtn = document.getElementById('clearBtn');
 const editToggle = document.getElementById('editToggle');
 const previewScale = document.getElementById('previewScale');
-const fontSizeInput = document.getElementById('fontSizeInput');
-const fontColorInput = document.getElementById('fontColorInput');
-const applyFontSizeBtn = document.getElementById('applyFontSizeBtn');
-const applyFontColorBtn = document.getElementById('applyFontColorBtn');
-const colorScale = document.getElementById('colorScale');
+const selectionToolbar = document.getElementById('selectionToolbar');
+const toolbarFontSize = document.getElementById('toolbarFontSize');
+const toolbarFontColor = document.getElementById('toolbarFontColor');
+const toolbarSwatches = document.getElementById('toolbarSwatches');
 const exportImagesBtn = document.getElementById('exportImagesBtn');
 const exportPdfBtn = document.getElementById('exportPdfBtn');
 const copyPromptBtn = document.getElementById('copyPromptBtn');
@@ -17,12 +16,19 @@ const saveGeminiBtn = document.getElementById('saveGeminiBtn');
 const openGeminiBtn = document.getElementById('openGeminiBtn');
 const geminiModal = document.getElementById('geminiModal');
 const modalCopyPromptBtn = document.getElementById('modalCopyPromptBtn');
+const modalOpenGeminiBtn = document.getElementById('modalOpenGeminiBtn');
 const modalGeminiUrl = document.getElementById('modalGeminiUrl');
 const modalSaveGeminiBtn = document.getElementById('modalSaveGeminiBtn');
 const modalCloseBtn = document.getElementById('modalCloseBtn');
 const toast = document.getElementById('toast');
+const errorModal = document.getElementById('errorModal');
+const errorMessage = document.getElementById('errorMessage');
+const errorPrompt = document.getElementById('errorPrompt');
+const copyErrorPromptBtn = document.getElementById('copyErrorPromptBtn');
+const closeErrorModalBtn = document.getElementById('closeErrorModalBtn');
 
 let promptText = '';
+let savedRange = null;
 
 const COLOR_SWATCHES = [
   '#111111', '#333333', '#6b7280', '#9ca3af', '#e5e7eb',
@@ -55,6 +61,10 @@ function sanitizeHtml(doc) {
 function extractSlides(html) {
   const parser = new DOMParser();
   const doc = sanitizeHtml(parser.parseFromString(html, 'text/html'));
+  const parserError = doc.querySelector('parsererror');
+  if (parserError) {
+    throw new Error('HTMLの構文解析に失敗しました。タグの閉じ忘れや不正な構造が含まれている可能性があります。');
+  }
   const slides = Array.from(doc.querySelectorAll('.slide'));
   if (slides.length > 0) return slides;
   const body = doc.body;
@@ -69,7 +79,17 @@ function renderSlides() {
   preview.innerHTML = '';
   if (!html) return;
 
-  const slides = extractSlides(html);
+  let slides = [];
+  try {
+    slides = extractSlides(html);
+  } catch (e) {
+    showErrorModal(e.message, html);
+    return;
+  }
+  if (slides.length === 0) {
+    showErrorModal('スライド要素が見つかりませんでした。class=\"slide\" が含まれているか確認してください。', html);
+    return;
+  }
   slides.forEach((slide, idx) => {
     const wrap = document.createElement('div');
     wrap.className = 'slide-wrap';
@@ -89,6 +109,9 @@ function applyEditMode() {
   preview.querySelectorAll('.slide-editor').forEach(slide => {
     slide.contentEditable = editable ? 'true' : 'false';
   });
+  if (!editable) {
+    selectionToolbar.classList.remove('show');
+  }
 }
 
 function applyPreviewScale() {
@@ -118,18 +141,23 @@ async function exportImages() {
 
 async function exportPdf() {
   const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({ unit: 'px', format: [1280, 720] });
+  const pdf = new jsPDF({ unit: 'px', format: [1280, 720], orientation: 'landscape' });
   const slides = Array.from(preview.querySelectorAll('.slide-editor'));
   for (let i = 0; i < slides.length; i++) {
     const canvas = await renderSlideCanvas(slides[i]);
     const imgData = canvas.toDataURL('image/png');
-    if (i > 0) pdf.addPage();
+    if (i > 0) pdf.addPage([1280, 720], 'landscape');
     pdf.addImage(imgData, 'PNG', 0, 0, 1280, 720);
   }
   pdf.save('slides.pdf');
 }
 
 async function renderSlideCanvas(slide) {
+  if (document.fonts && document.fonts.ready) {
+    try {
+      await document.fonts.ready;
+    } catch (e) {}
+  }
   const temp = document.createElement('div');
   temp.style.position = 'fixed';
   temp.style.left = '-10000px';
@@ -139,7 +167,7 @@ async function renderSlideCanvas(slide) {
   const clone = slide.cloneNode(true);
   clone.style.transform = 'none';
   clone.style.width = '1280px';
-  clone.style.minHeight = '720px';
+  clone.style.height = '720px';
   clone.contentEditable = 'false';
   temp.appendChild(clone);
   document.body.appendChild(temp);
@@ -185,10 +213,25 @@ function closeGeminiModal() {
   geminiModal.setAttribute('aria-hidden', 'true');
 }
 
+function showErrorModal(message, html) {
+  errorMessage.textContent = message;
+  errorPrompt.value = buildErrorPrompt(message, html);
+  errorModal.classList.add('show');
+  errorModal.setAttribute('aria-hidden', 'false');
+}
+
+function closeErrorModal() {
+  errorModal.classList.remove('show');
+  errorModal.setAttribute('aria-hidden', 'true');
+}
+
+function buildErrorPrompt(message, html) {
+  return `以下のHTMLでエラーが発生しました。\\n\\n【エラー内容】\\n${message}\\n\\n【修正方針】\\n- class=\"slide\" を持つスライド要素が必ず含まれるようにする\\n- タグの閉じ忘れや入れ子の不整合を修正\\n- 余分なscriptタグは削除\\n\\n【対象HTML】\\n${html}`;
+}
+
 function applySelectionStyle(style) {
-  const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0) return;
-  const range = selection.getRangeAt(0);
+  const range = restoreSelectionRange();
+  if (!range) return;
   if (range.collapsed) {
     const element = range.startContainer.parentElement;
     if (element && element.closest('.slide-editor')) {
@@ -200,7 +243,7 @@ function applySelectionStyle(style) {
     const span = document.createElement('span');
     Object.assign(span.style, style);
     range.surroundContents(span);
-    selection.removeAllRanges();
+    saveSelectionRange();
   } catch (e) {
     const container = range.commonAncestorContainer.parentElement;
     if (container && container.closest('.slide-editor')) {
@@ -211,13 +254,24 @@ function applySelectionStyle(style) {
 
 function refreshSelection() {
   const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0) return;
+  if (!selection || selection.rangeCount === 0) {
+    selectionToolbar.classList.remove('show');
+    return;
+  }
   const range = selection.getRangeAt(0);
   const node = range.startContainer.parentElement;
-  if (!node || !node.closest('.slide-editor')) return;
+  if (!node || !node.closest('.slide-editor')) {
+    selectionToolbar.classList.remove('show');
+    return;
+  }
   const styles = window.getComputedStyle(node);
-  fontSizeInput.value = Math.round(parseFloat(styles.fontSize) || 16);
-  fontColorInput.value = rgbToHex(styles.color || '#111111');
+  toolbarFontSize.value = Math.round(parseFloat(styles.fontSize) || 16);
+  toolbarFontColor.value = rgbToHex(styles.color || '#111111');
+  saveSelectionRange();
+  positionToolbar(range);
+  if (editToggle.checked) {
+    selectionToolbar.classList.add('show');
+  }
 }
 
 function rgbToHex(rgb) {
@@ -231,14 +285,43 @@ function renderColorScale() {
   COLOR_SWATCHES.forEach(color => {
     const swatch = document.createElement('button');
     swatch.type = 'button';
-    swatch.className = 'color-swatch';
+    swatch.className = 'toolbar-swatch';
     swatch.style.background = color;
     swatch.addEventListener('click', () => {
-      fontColorInput.value = color;
       applySelectionStyle({ color });
+      toolbarFontColor.value = color;
     });
-    colorScale.appendChild(swatch);
+    toolbarSwatches.appendChild(swatch);
   });
+}
+
+function saveSelectionRange() {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return;
+  savedRange = selection.getRangeAt(0).cloneRange();
+}
+
+function restoreSelectionRange() {
+  const selection = window.getSelection();
+  if (!savedRange) {
+    if (selection && selection.rangeCount > 0) return selection.getRangeAt(0);
+    return null;
+  }
+  selection.removeAllRanges();
+  selection.addRange(savedRange);
+  return savedRange;
+}
+
+function positionToolbar(range) {
+  if (!range) return;
+  const rect = range.getBoundingClientRect();
+  const panelRect = preview.parentElement.getBoundingClientRect();
+  const previewRect = preview.getBoundingClientRect();
+  if (rect.width === 0 && rect.height === 0) return;
+  const top = Math.max(8, rect.top - panelRect.top - 52);
+  const left = Math.min(previewRect.width - 240, Math.max(8, rect.left - panelRect.left));
+  selectionToolbar.style.top = `${top}px`;
+  selectionToolbar.style.left = `${left}px`;
 }
 
 function restoreState() {
@@ -259,11 +342,11 @@ clearBtn.addEventListener('click', () => {
 });
 editToggle.addEventListener('change', applyEditMode);
 previewScale.addEventListener('input', applyPreviewScale);
-applyFontSizeBtn.addEventListener('click', () => {
-  applySelectionStyle({ fontSize: `${fontSizeInput.value}px` });
+toolbarFontSize.addEventListener('input', () => {
+  applySelectionStyle({ fontSize: `${toolbarFontSize.value}px` });
 });
-applyFontColorBtn.addEventListener('click', () => {
-  applySelectionStyle({ color: fontColorInput.value });
+toolbarFontColor.addEventListener('input', () => {
+  applySelectionStyle({ color: toolbarFontColor.value });
 });
 exportImagesBtn.addEventListener('click', exportImages);
 exportPdfBtn.addEventListener('click', exportPdf);
@@ -271,6 +354,14 @@ copyPromptBtn.addEventListener('click', copyPrompt);
 saveGeminiBtn.addEventListener('click', saveGeminiUrl);
 openGeminiBtn.addEventListener('click', openGemini);
 modalCopyPromptBtn.addEventListener('click', copyPrompt);
+modalOpenGeminiBtn.addEventListener('click', () => {
+  const url = modalGeminiUrl.value.trim();
+  if (!url) {
+    showToast('Gemini URLを入力してください');
+    return;
+  }
+  window.open(url, '_blank', 'noopener');
+});
 modalSaveGeminiBtn.addEventListener('click', () => {
   geminiUrlInput.value = modalGeminiUrl.value.trim();
   saveGeminiUrl();
@@ -278,7 +369,23 @@ modalSaveGeminiBtn.addEventListener('click', () => {
   openGemini();
 });
 modalCloseBtn.addEventListener('click', closeGeminiModal);
+copyErrorPromptBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText(errorPrompt.value).then(() => {
+    showToast('コピーしました');
+  }).catch(() => {});
+});
+closeErrorModalBtn.addEventListener('click', closeErrorModal);
 document.addEventListener('selectionchange', refreshSelection);
+preview.addEventListener('mousedown', () => {
+  if (!editToggle.checked) {
+    selectionToolbar.classList.remove('show');
+  }
+});
+document.addEventListener('click', (event) => {
+  if (!preview.contains(event.target) && !selectionToolbar.contains(event.target)) {
+    selectionToolbar.classList.remove('show');
+  }
+});
 
 loadPrompt();
 restoreState();
