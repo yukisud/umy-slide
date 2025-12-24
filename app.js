@@ -158,39 +158,56 @@ async function renderSlideCanvas(slide) {
     await document.fonts.ready;
   }
 
-  // 書き出し用の一時コンテナを作成
-  const exportContainer = document.createElement('div');
-  exportContainer.style.position = 'fixed';
-  exportContainer.style.left = '-9999px';
-  exportContainer.style.top = '0';
-  exportContainer.style.width = '1280px';
-  exportContainer.style.height = '720px';
-  exportContainer.style.overflow = 'hidden';
-  exportContainer.style.background = '#ffffff';
-  document.body.appendChild(exportContainer);
+  // プレビュー内の実際のslide-wrapを取得
+  const wrapper = slide.closest('.slide-wrap');
+  if (!wrapper) {
+    return html2canvas(slide, {
+      width: 1280,
+      height: 720,
+      scale: 2,
+      backgroundColor: '#ffffff',
+      useCORS: true
+    });
+  }
 
-  // スライドをクローンしてコンテナに追加（transformなしの等倍）
-  const clonedSlide = slide.cloneNode(true);
-  clonedSlide.style.transform = 'none';
-  clonedSlide.style.width = '1280px';
-  clonedSlide.style.height = '720px';
-  exportContainer.appendChild(clonedSlide);
+  // wrapperのtransformを一時的に解除（プレビュースケールの影響を排除）
+  const originalTransform = wrapper.style.transform;
+  wrapper.style.transform = 'none';
 
-  // 書き出し（scale=2で高解像度化）
-  const canvas = await html2canvas(exportContainer, {
+  // レイアウトの再計算を待つ
+  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+  // slide要素を直接撮影（1280x720固定）
+  const canvas = await html2canvas(slide, {
     width: 1280,
     height: 720,
     scale: 2,
     backgroundColor: '#ffffff',
     useCORS: true,
+    allowTaint: true,
+    foreignObjectRendering: false,
     scrollX: 0,
     scrollY: 0,
     windowWidth: 1280,
-    windowHeight: 720
+    windowHeight: 720,
+    logging: false,
+    onclone: (clonedDoc) => {
+      // クローンされたドキュメント内のslide要素を取得
+      const clonedSlides = clonedDoc.querySelectorAll('.slide-editor');
+      clonedSlides.forEach(s => {
+        // 確実に1280x720にする
+        s.style.width = '1280px';
+        s.style.height = '720px';
+        s.style.minWidth = '1280px';
+        s.style.minHeight = '720px';
+        s.style.maxWidth = '1280px';
+        s.style.maxHeight = '720px';
+      });
+    }
   });
 
-  // 一時コンテナを削除
-  document.body.removeChild(exportContainer);
+  // wrapperのtransformを元に戻す
+  wrapper.style.transform = originalTransform;
 
   return canvas;
 }
