@@ -176,40 +176,13 @@ async function renderSlideCanvas(slide) {
     logging: false,
     onclone: (clonedDoc) => {
       // html2canvasのテキスト・アイコン描画バグを回避
+      // すべての要素を一律20px上に移動
       const clonedSlide = clonedDoc.querySelector('.slide-editor');
       if (!clonedSlide) return;
 
-      // すべての要素を取得して、条件に応じて調整
-      const allElements = clonedSlide.querySelectorAll('*');
-      allElements.forEach(el => {
-        const computedStyle = window.getComputedStyle(el);
-        const position = computedStyle.position;
-        const fontSize = parseFloat(computedStyle.fontSize);
-        const width = parseFloat(computedStyle.width);
-        const height = parseFloat(computedStyle.height);
-
-        // 背景の大きなアイコン（200px以上）は除外
-        const isLargeBackground = (width > 200 || height > 200) && (position === 'absolute' || position === 'fixed');
-
-        // absolute/fixed要素も除外（装飾用の可能性が高い）
-        const isDecorative = position === 'absolute' || position === 'fixed';
-
-        if (isLargeBackground || isDecorative) {
-          return; // 大きな背景要素や絶対配置要素はスキップ
-        }
-
-        // テキスト要素のみ調整
-        const isTextElement = el.matches('p, h1, h2, h3, h4, h5, h6, span, li, a, strong, em, div');
-        // 小さなアイコン（枠内のアイコン）のみ調整
-        const isSmallIcon = el.matches('i, svg') && width < 100 && height < 100;
-
-        if (isTextElement || isSmallIcon) {
-          if (position === 'static') {
-            el.style.position = 'relative';
-          }
-          el.style.top = '-20px';
-        }
-      });
+      // slide-editor全体を20px上に移動
+      clonedSlide.style.position = 'relative';
+      clonedSlide.style.top = '-20px';
     }
   });
 
