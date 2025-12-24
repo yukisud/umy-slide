@@ -158,14 +158,26 @@ async function renderSlideCanvas(slide) {
     await document.fonts.ready;
   }
 
-  // 1. スライドを複製してクリーンアップ
+  // 1. スライドを複製
   const clone = slide.cloneNode(true);
+
+  // 2. 複製したスライドのクリーンアップとスタイル調整
   clone.classList.remove('slide-editor');
   clone.contentEditable = 'false';
   clone.style.transform = 'none';
   clone.style.margin = '0';
+  clone.style.width = '1280px';
+  clone.style.height = '720px';
 
-  // 2. 撮影用の隔離コンテナを作成
+  // html2canvas特有のズレ対策: line-heightとvertical-alignを明示
+  // これによりブラウザ表示とCanvas描画の差異を吸収します
+  clone.style.lineHeight = '1.5';
+  const images = clone.querySelectorAll('img');
+  images.forEach(img => {
+    img.style.verticalAlign = 'bottom';
+  });
+
+  // 3. 撮影用の隔離コンテナを作成
   const container = document.createElement('div');
   Object.assign(container.style, {
     position: 'fixed',
@@ -174,45 +186,45 @@ async function renderSlideCanvas(slide) {
     width: '1280px',
     height: '720px',
     zIndex: '-9999',
-    background: '#ffffff',
-    overflow: 'hidden' // はみ出し防止
+    overflow: 'hidden',
+    background: '#ffffff'
   });
 
   container.appendChild(clone);
   document.body.appendChild(container);
 
+  // 4. レイアウト計算のために少し待機
+  await new Promise(resolve => setTimeout(resolve, 100));
+
+  // 5. 撮影
   try {
-    // 3. dom-to-imageでレンダリング
-    // SVGのforeignObjectを使用してブラウザのレンダリングエンジンで描画します
-    const dataUrl = await domtoimage.toPng(container, {
+    const canvas = await html2canvas(container, {
       width: 1280,
       height: 720,
-      style: {
-        transform: 'scale(1)',
-        transformOrigin: 'top left'
+      windowWidth: 1280,
+      windowHeight: 720,
+      scrollX: 0,
+      scrollY: 0,
+      x: 0,
+      y: 0,
+      scale: 2,
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      onclone: (clonedDoc) => {
+        // クローン後のドキュメントでさらに微調整が必要な場合はここに記述
+        // 例: 特定の要素のスタイル上書きなど
       }
     });
-
-    // 4. Canvasに変換 (既存の処理との互換性のため)
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = 1280;
-        canvas.height = 720;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        resolve(canvas);
-      };
-      img.onerror = reject;
-      img.src = dataUrl;
-    });
-
+    return canvas;
   } catch (error) {
-    console.error('Export failed:', error);
+    console.error('html2canvas export failed:', error);
+    // エラー時はアラートを出す（ユーザーへのフィードバック）
+    alert('書き出しに失敗しました。コンソールを確認してください。');
     throw error;
   } finally {
-    // 5. 後始末
+    // 6. 後始末
     document.body.removeChild(container);
   }
 }
