@@ -163,28 +163,52 @@ async function renderSlideCanvas(slide) {
     return html2canvas(slide, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
   }
 
+  const originalScale = preview.style.getPropertyValue('--preview-scale');
+  const originalWrapperTransform = wrapper.style.transform;
+  const originalWrapperOrigin = wrapper.style.transformOrigin;
+  const originalWrapperWidth = wrapper.style.width;
+  const originalWrapperHeight = wrapper.style.height;
   const originalMargin = wrapper.style.margin;
-  document.body.classList.add('exporting');
-  wrapper.style.margin = '0';
+  const originalSlideWidth = slide.style.width;
+  const originalSlideHeight = slide.style.height;
 
-  const targetScale = 2;
-  const targetWidth = 1280 * targetScale;
-  const targetHeight = 720 * targetScale;
-  const rawCanvas = await html2canvas(wrapper, {
-    scale: targetScale,
+  document.body.classList.add('exporting');
+  preview.style.setProperty('--preview-scale', 1);
+  wrapper.style.transform = 'none';
+  wrapper.style.transformOrigin = 'top left';
+  wrapper.style.width = '1280px';
+  wrapper.style.height = '720px';
+  wrapper.style.margin = '0';
+  slide.style.width = '1280px';
+  slide.style.height = '720px';
+
+  const rawCanvas = await html2canvas(slide, {
+    scale: 2,
     backgroundColor: '#ffffff',
     useCORS: true,
     scrollX: 0,
-    scrollY: 0
+    scrollY: 0,
+    width: 1280,
+    height: 720
   });
 
+  const offsetY = -20;
   const output = document.createElement('canvas');
-  output.width = targetWidth;
-  output.height = targetHeight;
+  output.width = rawCanvas.width;
+  output.height = rawCanvas.height;
   const ctx = output.getContext('2d');
-  ctx.drawImage(rawCanvas, 0, 0, rawCanvas.width, rawCanvas.height, 0, 0, targetWidth, targetHeight);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, output.width, output.height);
+  ctx.drawImage(rawCanvas, 0, offsetY * 2);
 
+  slide.style.width = originalSlideWidth;
+  slide.style.height = originalSlideHeight;
+  wrapper.style.transform = originalWrapperTransform;
+  wrapper.style.transformOrigin = originalWrapperOrigin;
+  wrapper.style.width = originalWrapperWidth;
+  wrapper.style.height = originalWrapperHeight;
   wrapper.style.margin = originalMargin;
+  preview.style.setProperty('--preview-scale', originalScale);
   document.body.classList.remove('exporting');
   return output;
 }
